@@ -193,11 +193,14 @@ def main():
                     mask = (category_display['SubCategory'] != 'Total') & (category_display['SubCategory'].notna()) & (category_display['SubCategory'] != '')
                     category_display = category_display[mask]
                     
-                    # Calculate contribution percentage for each subcategory
+# Calculate contribution percentage for each subcategory
                     category_display['Contribution'] = (category_display['Actual'] / actual * 100).round(1) if actual > 0 else 0
                     
                     # Show subcategory table with contribution
-                    st.dataframe(category_display, use_container_width=True, hide_index=True)
+                    st.dataframe(category_display.style.format({
+                        'Actual': '£{:,.2f}',
+                        'Contribution': '{:.1f}%'
+                    }), use_container_width=True, hide_index=True)
                     
                     # Add "See Transactions" dropdown
                     with st.expander("See Transactions", expanded=False):
@@ -209,7 +212,7 @@ def main():
                         category_transactions = category_transactions[['Date', 'Name', 'Amount', 'SubCategory', 'PaymentMethod', 'Notes']].copy()
                         category_transactions = category_transactions.iloc[::-1]
                         
-                        st.dataframe(category_transactions, use_container_width=True, hide_index=True)
+                        st.dataframe(category_transactions.style.format({'Amount': '£{:,.2f}'}), use_container_width=True, hide_index=True)
             
             with col2:
                 # Show only colored status on the right
