@@ -102,7 +102,22 @@ def main():
     total_rows = df.loc[df.index.get_level_values(1) == 'Total'].copy()
     total_rows['Category'] = total_rows.index.get_level_values(0)
     
-    for category in sorted(categories):
+    # Get total rows for summary data
+    total_rows = df.loc[df.index.get_level_values(1) == 'Total'].copy()
+    total_rows['Category'] = total_rows.index.get_level_values(0)
+    
+    # Sort categories by budget amount (descending)
+    category_budgets = {}
+    for category in categories:
+        category_summary = total_rows[total_rows['Category'] == category]
+        if not category_summary.empty:
+            category_budgets[category] = category_summary.iloc[0]['Budget']
+        else:
+            category_budgets[category] = 0
+    
+    sorted_categories = sorted(category_budgets.items(), key=lambda x: x[1], reverse=True)
+    
+    for category, _ in sorted_categories:
         # Get data for this category
         category_data = df_display[df_display['Category'] == category].copy()
         
