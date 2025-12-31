@@ -91,7 +91,7 @@ def main():
     st.divider()
     
     # Create two columns layout for pie chart and category bars
-    col_pie, col_bars = st.columns([1, 1])
+    col_bars, col_pie = st.columns([1, 1])
     
     with col_pie:
         st.markdown("## Spending Breakdown")
@@ -107,12 +107,15 @@ def main():
         # Create pie chart
         if not pie_data.empty:
             fig = px.pie(pie_data, values='Actual', names='Category', 
-                        title='Total Spending by Category',
-                        hover_data=['Actual'],
-                        labels={'Actual': 'Amount (£)'})
+                        title='Total Spending by Category')
             
             # Customize the chart
-            fig.update_traces(textposition='inside', textinfo='percent+label')
+            fig.update_traces(
+                textposition='inside', 
+                textinfo='percent+label', 
+                showlegend=False,
+                hovertemplate='£%{value:.2f}<extra></extra>'
+            )
             fig.update_layout(height=500)
             
             st.plotly_chart(fig, use_container_width=True)
