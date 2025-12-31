@@ -75,14 +75,14 @@ def main():
     # Display summary metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Budget", f"${total_budget:,.2f}")
+        st.metric("Total Budget", f"£{total_budget:,.2f}")
     with col2:
-        st.metric("Total Spent", f"${total_actual:,.2f}")
+        st.metric("Total Spent", f"£{total_actual:,.2f}")
     with col3:
         if total_remaining >= 0:
-            st.markdown(f"<span style='color:green; font-size:14px;'>Total Remaining</span><br><span style='color:green; font-size:32px; font-weight:bold;'>${total_remaining:,.2f}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='color:green; font-size:14px;'>Total Remaining</span><br><span style='color:green; font-size:32px; font-weight:bold;'>£{total_remaining:,.2f}</span>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<span style='color:red; font-size:14px;'>Total Overspent</span><br><span style='color:red; font-size:32px; font-weight:bold;'>${abs(total_remaining):,.2f}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='color:red; font-size:14px;'>Total Overspent</span><br><span style='color:red; font-size:32px; font-weight:bold;'>£{abs(total_remaining):,.2f}</span>", unsafe_allow_html=True)
     with col4:
         total_percentage = (total_actual / total_budget * 100) if total_budget > 0 else 0
         st.metric("Budget Used", f"{total_percentage:.1f}%")
@@ -127,10 +127,10 @@ def main():
                 col1a, col2a = st.columns(2)
                 
                 with col1a:
-                    st.metric("Total Budget", f"${budget:,.2f}")
+                    st.metric("Total Budget", f"£{budget:,.2f}")
                     
                 with col2a:
-                    st.metric("Total Spent", f"${actual:,.2f}")
+                    st.metric("Total Spent", f"£{actual:,.2f}")
                 
                 # Show detailed subcategory information
                 # Note: after reset_index(), SubCategory is "level_1"
@@ -153,9 +153,9 @@ def main():
             # Show only colored status on the right
             if budget > 0:
                 if remaining >= 0:
-                    st.markdown(f"<span style='color:green; font-size:20px; font-weight:bold;'>${remaining:,.2f}</span><br><span style='color:green; font-size:14px;'>left</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:green; font-size:20px; font-weight:bold;'>£{remaining:,.2f}</span><br><span style='color:green; font-size:14px;'>left</span>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<span style='color:red; font-size:20px; font-weight:bold;'>${abs(remaining):,.2f}</span><br><span style='color:red; font-size:14px;'>overspent</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:red; font-size:20px; font-weight:bold;'>£{abs(remaining):,.2f}</span><br><span style='color:red; font-size:14px;'>overspent</span>", unsafe_allow_html=True)
             else:
                 st.write("No<br>budget")
             
