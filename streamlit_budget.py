@@ -108,21 +108,19 @@ def main():
                     
                 with col2a:
                     st.metric("Total Spent", f"${actual:,.2f}")
-            
-            
-            
-            # Show detailed subcategory information
-            # Note: after reset_index(), SubCategory is "level_1"
-            category_display = pd.DataFrame({
-                'SubCategory': category_data['level_1'],
-                'Actual': category_data['Actual']
-            })
-            
-            # Calculate contribution percentage for each subcategory
-            category_display['Contribution'] = (category_display['Actual'] / actual * 100).round(1) if actual > 0 else 0
-            
-            # Show subcategory table with contribution
-            st.dataframe(category_display, use_container_width=True, hide_index=True, height=min(len(category_display) * 40 + 50, 400))
+                
+                # Show detailed subcategory information
+                # Note: after reset_index(), SubCategory is "level_1"
+                category_display = pd.DataFrame({
+                    'SubCategory': category_data['level_1'],
+                    'Actual': category_data['Actual']
+                })
+                
+                # Calculate contribution percentage for each subcategory
+                category_display['Contribution'] = (category_display['Actual'] / actual * 100).round(1) if actual > 0 else 0
+                
+                # Show subcategory table with contribution
+                st.dataframe(category_display, use_container_width=True, hide_index=True, height=min(len(category_display) * 40 + 50, 400))
         
         with col2:
             # Show only colored status on the right
