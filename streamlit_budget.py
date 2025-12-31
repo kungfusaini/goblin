@@ -112,7 +112,7 @@ def main():
         actual = category_summary['Actual']
         remaining = category_summary['Remaining']
         
-# Create expander with status next to it
+        # Create expander with status next to it
         col1, col2 = st.columns([4, 1])
         
         with col1:
@@ -122,8 +122,7 @@ def main():
                     percentage_used = min(actual / budget * 100, 100)
                     st.progress(min(percentage_used / 100, 1.0))
                     st.caption(f"{percentage_used:.1f}% used")
-                
-                # Show summary metrics
+                # Show summary metrics first
                 col1a, col2a = st.columns(2)
                 
                 with col1a:
@@ -131,6 +130,8 @@ def main():
                     
                 with col2a:
                     st.metric("Total Spent", f"£{actual:,.2f}")
+                
+
                 
                 # Show detailed subcategory information
                 # Note: after reset_index(), SubCategory is "level_1"
