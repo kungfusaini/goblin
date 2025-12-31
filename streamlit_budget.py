@@ -149,6 +149,18 @@ def main():
                 
                 # Show subcategory table with contribution
                 st.dataframe(category_display, use_container_width=True, hide_index=True)
+                
+                # Add "See Transactions" dropdown
+                with st.expander("See Transactions", expanded=False):
+                    # Load original transaction data for this category
+                    transactions_df = pd.read_csv('testout.csv')
+                    category_transactions = transactions_df[transactions_df['Category'] == category].copy()
+                    
+                    # Format and display transactions
+                    category_transactions = category_transactions[['Date', 'Name', 'Amount', 'SubCategory', 'PaymentMethod', 'Notes']].copy()
+                    category_transactions = category_transactions.iloc[::-1]
+                    
+                    st.dataframe(category_transactions, use_container_width=True, hide_index=True)
         
         with col2:
             # Show only colored status on the right
