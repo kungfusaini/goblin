@@ -66,6 +66,29 @@ def main():
     # Load and process data
     df = load_and_process_data()
     
+    # Calculate overall totals
+    total_rows = df.loc[df.index.get_level_values(1) == 'Total']
+    total_budget = total_rows['Budget'].sum()
+    total_actual = total_rows['Actual'].sum()
+    total_remaining = total_rows['Remaining'].sum()
+    
+    # Display summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Budget", f"${total_budget:,.2f}")
+    with col2:
+        st.metric("Total Spent", f"${total_actual:,.2f}")
+    with col3:
+        if total_remaining >= 0:
+            st.markdown(f"<span style='color:green; font-size:14px;'>Total Remaining</span><br><span style='color:green; font-size:32px; font-weight:bold;'>${total_remaining:,.2f}</span>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<span style='color:red; font-size:14px;'>Total Overspent</span><br><span style='color:red; font-size:32px; font-weight:bold;'>${abs(total_remaining):,.2f}</span>", unsafe_allow_html=True)
+    with col4:
+        total_percentage = (total_actual / total_budget * 100) if total_budget > 0 else 0
+        st.metric("Budget Used", f"{total_percentage:.1f}%")
+    
+    st.divider()
+    
     # Create collapsible categories with summary bars
     df_display = df.reset_index()
     
