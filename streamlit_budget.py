@@ -1,6 +1,11 @@
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+import base64
+
+def get_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
 
 def load_and_process_data():
     # Load data and filter out 'Fun' category
@@ -62,7 +67,12 @@ def main():
 # Set page title and load data
     st.set_page_config(page_title="Goblin", page_icon="🟢")
     
-    st.markdown("# 🟢 Goblin")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="data:image/png;base64,{}" width="50" style="margin: 0;">
+        <h1 style="margin: 0;">Goblin</h1>
+    </div>
+    """.format(get_base64("goblin-mascot.png")), unsafe_allow_html=True)
     
     # Load and process data
     df = load_and_process_data()
