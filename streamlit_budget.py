@@ -85,8 +85,14 @@ def main():
     # Reduce top margin of main content
     st.markdown("""
     <style>
+    .stMainBlockContainer.block-container {
+        padding-top: 30px !important;
+        margin-top: 0 !important;
+    }
+    
     .main .block-container {
-        padding-top: 1rem !important;
+        padding-top: 30px !important;
+        margin-top: 0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
