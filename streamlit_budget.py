@@ -79,16 +79,20 @@ def load_and_process_data(selected_date=None):
     return final_view
 
 def main():
-    # Make page full width
-    st.set_page_config(layout="wide")
+# Set page configuration
+    st.set_page_config(layout="wide", page_title="Goblin", page_icon="🟢")
     
-    # Set page title and load data
-    st.set_page_config(page_title="Goblin", page_icon="🟢")
-    
-    
+    # Reduce top margin of main content
+    st.markdown("""
+    <style>
+    .main .block-container {
+        padding-top: 1rem !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.3rem;">
         <img src="data:image/png;base64,{}" width="50" style="margin: 0;">
         <h1 style="margin: 0;">Goblin</h1>
     </div>
@@ -98,7 +102,7 @@ def main():
     if 'selected_date' not in st.session_state:
         st.session_state.selected_date = date.today().replace(day=1)
     
-    col1, col2, col3 = st.columns([1, 5, 1])
+    col1, col2, col3 = st.columns([1, 3, 1])
     
     with col1:
         if st.button("← Previous", key="prev_month"):
