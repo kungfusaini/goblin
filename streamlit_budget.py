@@ -2,15 +2,33 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import base64
+from datetime import datetime, date
+import calendar
 
 def get_base64(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode()
 
-def load_and_process_data():
+@st.cache_data
+def load_and_process_data(selected_date=None):
     # Load data and filter out 'Fun' category
     df = pd.read_csv('testout.csv')
     df = df[df['Category'] != 'Fun']
+    
+    # Filter data by selected month if provided
+    if selected_date:
+        # Convert Date column to datetime if it's not already
+        df['Date'] = pd.to_datetime(df['Date'])
+        # Filter for selected month and year
+        year, month = selected_date.year, selected_date.month
+        df = df[(df['Date'].dt.year == year) & (df['Date'].dt.month == month)]
+        # Convert back to string format for consistency
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    
+    # Return empty DataFrame if no data found
+    if df.empty:
+        return pd.DataFrame(columns=['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes'], 
+                          index=pd.MultiIndex.from_tuples([], names=['Category', 'SubCategory']))
     
     # Create pivot table
     pivot_table = df.pivot_table(
@@ -64,7 +82,7 @@ def main():
     # Make page full width
     st.set_page_config(layout="wide")
     
-# Set page title and load data
+    # Set page title and load data
     st.set_page_config(page_title="Goblin", page_icon="🟢")
     
     st.markdown("""
@@ -74,8 +92,41 @@ def main():
     </div>
     """.format(get_base64("goblin-mascot.png")), unsafe_allow_html=True)
     
-    # Load and process data
-    df = load_and_process_data()
+    # Month selector
+    if 'selected_date' not in st.session_state:
+        st.session_state.selected_date = date.today().replace(day=1)
+    
+    col1, col2, col3 = st.columns([1, 5, 1])
+    
+    with col1:
+        if st.button("← Previous", key="prev_month"):
+            if st.session_state.selected_date.month == 1:
+                st.session_state.selected_date = st.session_state.selected_date.replace(year=st.session_state.selected_date.year - 1, month=12)
+            else:
+                st.session_state.selected_date = st.session_state.selected_date.replace(month=st.session_state.selected_date.month - 1)
+            st.rerun()
+    
+    with col2:
+        month_name = calendar.month_name[st.session_state.selected_date.month]
+        st.markdown(f"<h2 style='text-align: center; margin: 0;'>{month_name} {st.session_state.selected_date.year}</h2>", unsafe_allow_html=True)
+    
+    with col3:
+        if st.button("Next →", key="next_month"):
+            if st.session_state.selected_date.month == 12:
+                st.session_state.selected_date = st.session_state.selected_date.replace(year=st.session_state.selected_date.year + 1, month=1)
+            else:
+                st.session_state.selected_date = st.session_state.selected_date.replace(month=st.session_state.selected_date.month + 1)
+            st.rerun()
+    
+    # Load and process data with selected month
+    df = load_and_process_data(st.session_state.selected_date)
+    
+    
+    
+    # Check if no data found for selected month
+    if df.empty:
+        st.warning(f"No data found for {calendar.month_name[st.session_state.selected_date.month]} {st.session_state.selected_date.year}")
+        return
     
     # Calculate overall totals
     total_rows = df.loc[df.index.get_level_values(1) == 'Total']
