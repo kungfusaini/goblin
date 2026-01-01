@@ -85,6 +85,8 @@ def main():
     # Set page title and load data
     st.set_page_config(page_title="Goblin", page_icon="🟢")
     
+    
+    
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 10px;">
         <img src="data:image/png;base64,{}" width="50" style="margin: 0;">
@@ -151,8 +153,12 @@ def main():
     
     st.divider()
     
-    # Create two columns layout for pie chart and category bars
-    col_bars, col_pie = st.columns([1, 1])
+    # Create tabs for Out and In
+    tab_out, tab_in = st.tabs(["Out", "In"])
+    
+    with tab_out:
+        # Create two columns layout for pie chart and category bars
+        col_bars, col_pie = st.columns([1, 1])
     
     with col_pie:
         st.markdown("## Spending Breakdown")
@@ -180,6 +186,30 @@ def main():
             fig.update_layout(height=500)
             
             st.plotly_chart(fig, use_container_width=True)
+        
+        # Load all transactions to calculate credit spending
+        all_transactions = pd.read_csv('testout.csv')
+        all_transactions['Date'] = pd.to_datetime(all_transactions['Date'])
+        
+        # Filter for selected month and credit payments
+        year, month = st.session_state.selected_date.year, st.session_state.selected_date.month
+        credit_transactions = all_transactions[
+            (all_transactions['Date'].dt.year == year) & 
+            (all_transactions['Date'].dt.month == month) &
+            (all_transactions['PaymentMethod'].str.contains('Credit', case=False, na=False))
+        ]
+        
+        total_credit_spending = credit_transactions['Amount'].sum()
+        
+        # Display total credit spending
+        st.metric("Credit Pot", f"£{total_credit_spending:,.2f}")
+        
+        # Show credit transactions if any
+        if not credit_transactions.empty:
+            with st.expander("View Credit Transactions", expanded=False):
+                credit_display = credit_transactions[['Date', 'Name', 'Amount', 'SubCategory']].copy()
+                credit_display = credit_display.iloc[::-1]  # Most recent first
+                st.dataframe(credit_display.style.format({'Amount': '£{:,.2f}'}), use_container_width=True, hide_index=True)
     
     with col_bars:
         st.markdown("## Category Details")
@@ -284,10 +314,11 @@ def main():
                         st.markdown(f"<span style='color:red; font-size:20px; font-weight:bold;'>£{abs(remaining):,.2f}</span><br><span style='color:red; font-size:14px;'>overspent</span>", unsafe_allow_html=True)
                 else:
                     st.write("No<br>budget")
-            
-            
     
-    
+        with tab_in:
+                st.markdown("## 💰 Income")
+                st.write("Income tracking coming soon...")
+                # TODO: Add income tracking functionality here
 
 if __name__ == "__main__":
     main()
