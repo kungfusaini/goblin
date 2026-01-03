@@ -32,6 +32,9 @@ def load_and_process_data(selected_date=None, use_api=True):
     # Check if budget exists
     has_budget = len(budget_dict) > 0
     
+    # Calculate total budget from source (not just categories with transactions)
+    total_budget = sum(budget_dict.values()) if budget_dict else 0
+    
     # Filter out 'Fun' category
     if not df.empty:
         df = df[df['Category'] != 'Fun']
@@ -101,7 +104,7 @@ def load_and_process_data(selected_date=None, use_api=True):
     # Reorder columns
     final_view = final_view[['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes']]
     
-    return final_view, has_budget
+    return final_view, has_budget, budget_dict
 
 def main():
     # Check for test mode flag
@@ -159,7 +162,7 @@ def main():
             st.rerun()
     
     # Load and process data with selected month
-    df, has_budget = load_and_process_data(st.session_state.selected_date, use_api=use_api)
+    df, has_budget, budget_dict = load_and_process_data(st.session_state.selected_date, use_api=use_api)
     
     # Show budget warning if no budget detected
     if not has_budget:
@@ -172,29 +175,30 @@ def main():
     
     # Calculate overall totals
     total_rows = df.loc[df.index.get_level_values(1) == 'Total']
-    total_budget = total_rows['Budget'].sum()
     total_actual = total_rows['Actual'].sum()
     total_remaining = total_rows['Remaining'].sum()
+    # Note: total_budget is now calculated in load_and_process_data function
     
     # Display summary metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Budget", f"£{total_budget:,.2f}")
+        st.metric("Total Budget", f"£{sum(budget_dict.values()):,.2f}")
     with col2:
         st.metric("Total Spent", f"£{total_actual:,.2f}")
     with col3:
-        if total_remaining >= 0:
-            st.markdown(f"<span style='color:green; font-size:14px;'>Total Remaining</span><br><span style='color:green; font-size:32px; font-weight:bold;'>£{total_remaining:,.2f}</span>", unsafe_allow_html=True)
+        remaining_budget = sum(budget_dict.values()) - total_actual if budget_dict else -total_actual
+        if remaining_budget >= 0:
+            st.markdown(f"<span style='color:green; font-size:14px;'>Total Remaining</span><br><span style='color:green; font-size:32px; font-weight:bold;'>£{remaining_budget:,.2f}</span>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<span style='color:red; font-size:14px;'>Total Overspent</span><br><span style='color:red; font-size:32px; font-weight:bold;'>£{abs(total_remaining):,.2f}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='color:red; font-size:14px;'>Total Overspent</span><br><span style='color:red; font-size:32px; font-weight:bold;'>£{abs(remaining_budget):,.2f}</span>", unsafe_allow_html=True)
     with col4:
-        total_percentage = (total_actual / total_budget * 100) if total_budget > 0 else 0
+        total_percentage = (total_actual / sum(budget_dict.values()) * 100) if budget_dict and sum(budget_dict.values()) > 0 else 0
         st.metric("Budget Used", f"{total_percentage:.1f}%")
     
     st.divider()
     
-    # Create tabs for Out and In
-    tab_out, tab_in = st.tabs(["Out", "In"])
+    # Create tabs for Out, Budget, and In
+    tab_out, tab_budget, tab_in = st.tabs(["Out", "Budget", "In"])
     
     with tab_out:
         # Create two columns layout for pie chart and category bars
@@ -363,7 +367,53 @@ def main():
                 else:
                     st.write("No budget")
     
-        with tab_in:
+    with tab_budget:
+        st.markdown("## 📊 Budget Overview")
+        
+        # Get current month budget data
+        current_month = st.session_state.selected_date.strftime("%Y-%m")
+        if use_api:
+            api = VulkanAPI()
+            budget_data = api.get_budget(current_month)
+        else:
+            with open('test/testbudget.json', 'r') as f:
+                all_budget_data = json.load(f)
+            budget_data = all_budget_data.get(current_month, {})
+        
+        if budget_data:
+            st.write(f"**Budget for {current_month}:**")
+            
+            # Create two columns for budget display
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("### Budget Categories")
+                # Create a DataFrame for better display
+                budget_df = pd.DataFrame(list(budget_data.items()), columns=['Category', 'Amount'])
+                budget_df = budget_df.sort_values('Amount', ascending=False)
+                
+                # Display budget table
+                st.dataframe(
+                    budget_df.style.format({'Amount': '£{:,.2f}'}),
+                    use_container_width=True,
+                    hide_index=True
+                )
+            
+            with col2:
+                st.markdown("### Budget Summary")
+                total_monthly_budget = sum(budget_data.values())
+                st.metric("Total Monthly Budget", f"£{total_monthly_budget:,.2f}")
+                
+                # Show budget breakdown
+                st.markdown("### Top Categories")
+                top_categories = budget_df.head(5)  # Top 5 categories
+                for _, row in top_categories.iterrows():
+                    percentage = (row['Amount'] / total_monthly_budget * 100) if total_monthly_budget > 0 else 0
+                    st.write(f"**{row['Category']}**: £{row['Amount']:,.2f} ({percentage:.1f}%)")
+        else:
+            st.warning(f"No budget data found for {current_month}")
+    
+    with tab_in:
                 st.markdown("## 💰 Income")
                 st.write("Income tracking coming soon...")
                 # TODO: Add income tracking functionality here
