@@ -4,19 +4,40 @@ import plotly.express as px
 import base64
 from datetime import datetime, date
 import calendar
+import json
+import os
+import sys
+from vulkan_api import VulkanAPI
 
 def get_base64(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode()
 
 @st.cache_data
-def load_and_process_data(selected_date=None):
-    # Load data and filter out 'Fun' category
-    df = pd.read_csv('testout.csv')
-    df = df[df['Category'] != 'Fun']
+def load_and_process_data(selected_date=None, use_api=True):
+    current_month = selected_date.strftime("%Y-%m") if selected_date else datetime.now().strftime("%Y-%m")
+    
+    if use_api:
+        # API-based data loading
+        api = VulkanAPI()
+        df = api.get_transactions()
+        budget_dict = api.get_budget(current_month)
+    else:
+        # Local file-based data loading
+        df = pd.read_csv('test/testout.csv')
+        with open('test/testbudget.json', 'r') as f:
+            budget_data = json.load(f)
+        budget_dict = budget_data.get(current_month, {})
+    
+    # Check if budget exists
+    has_budget = len(budget_dict) > 0
+    
+    # Filter out 'Fun' category
+    if not df.empty:
+        df = df[df['Category'] != 'Fun']
     
     # Filter data by selected month if provided
-    if selected_date:
+    if selected_date and not df.empty:
         # Convert Date column to datetime if it's not already
         df['Date'] = pd.to_datetime(df['Date'])
         # Filter for selected month and year
@@ -27,8 +48,9 @@ def load_and_process_data(selected_date=None):
     
     # Return empty DataFrame if no data found
     if df.empty:
-        return pd.DataFrame(columns=['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes'], 
-                          index=pd.MultiIndex.from_tuples([], names=['Category', 'SubCategory']))
+        empty_df = pd.DataFrame(columns=['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes'], 
+                               index=pd.MultiIndex.from_tuples([], names=['Category', 'SubCategory']))
+        return empty_df, has_budget
     
     # Create pivot table
     pivot_table = df.pivot_table(
@@ -51,10 +73,7 @@ def load_and_process_data(selected_date=None):
     
     final_view = pivot_table.groupby(level=0, sort=False).apply(add_totals).reset_index(level=0, drop=True)
     
-    # Apply budget amounts to category totals
-    budget_df = pd.read_csv('testbudget.csv')
-    budget_dict = dict(zip(budget_df['Category'], budget_df['Amount']))
-    
+    # Apply budget amounts to category totals from API or local data
     for category, budget in budget_dict.items():
         total_mask = final_view.index.get_level_values(1) == 'Total'
         category_mask = final_view.index.get_level_values(0) == category
@@ -71,15 +90,24 @@ def load_and_process_data(selected_date=None):
     final_view['Remaining'] = 0.0
     final_view['Percentage'] = 0.0
     final_view.loc[total_rows_mask, 'Remaining'] = final_view.loc[total_rows_mask, 'Budget'] - final_view.loc[total_rows_mask, 'Actual']
-    final_view.loc[total_rows_mask, 'Percentage'] = (final_view.loc[total_rows_mask, 'Actual'] / final_view.loc[total_rows_mask, 'Budget'] * 100).round(1)
+    # Avoid division by zero - simpler approach
+    total_rows = final_view.loc[total_rows_mask]
+    for idx in total_rows.index:
+        budget = final_view.loc[idx, 'Budget']
+        actual = final_view.loc[idx, 'Actual']
+        if budget > 0:
+            final_view.loc[idx, 'Percentage'] = (actual / budget * 100).round(1)
     
     # Reorder columns
     final_view = final_view[['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes']]
     
-    return final_view
+    return final_view, has_budget
 
 def main():
-# Set page configuration
+    # Check for test mode flag
+    use_api = '--test' not in sys.argv
+    
+    # Set page configuration
     st.set_page_config(layout="wide", page_title="Goblin", page_icon="🟢")
     
     # Reduce top margin of main content
@@ -131,9 +159,11 @@ def main():
             st.rerun()
     
     # Load and process data with selected month
-    df = load_and_process_data(st.session_state.selected_date)
+    df, has_budget = load_and_process_data(st.session_state.selected_date, use_api=use_api)
     
-    
+    # Show budget warning if no budget detected
+    if not has_budget:
+        st.error("🚨 No budget detected for selected month - showing $0 for all categories")
     
     # Check if no data found for selected month
     if df.empty:
@@ -198,7 +228,11 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
         
         # Load all transactions to calculate credit spending
-        all_transactions = pd.read_csv('testout.csv')
+        if use_api:
+            api_instance = VulkanAPI()
+            all_transactions = api_instance.get_transactions()
+        else:
+            all_transactions = pd.read_csv('test/testout.csv')
         all_transactions['Date'] = pd.to_datetime(all_transactions['Date'])
         
         # Filter for selected month and credit payments
@@ -306,7 +340,11 @@ def main():
                     # Add "See Transactions" dropdown
                     with st.expander("See Transactions", expanded=False):
                         # Load original transaction data for this category
-                        transactions_df = pd.read_csv('testout.csv')
+                        if use_api:
+                            api_instance = VulkanAPI()
+                            transactions_df = api_instance.get_transactions()
+                        else:
+                            transactions_df = pd.read_csv('test/testout.csv')
                         category_transactions = transactions_df[transactions_df['Category'] == category].copy()
                         
                         # Format and display transactions
@@ -323,7 +361,7 @@ def main():
                     else:
                         st.markdown(f"<span style='color:red; font-size:20px; font-weight:bold;'>£{abs(remaining):,.2f}</span><br><span style='color:red; font-size:14px;'>overspent</span>", unsafe_allow_html=True)
                 else:
-                    st.write("No<br>budget")
+                    st.write("No budget")
     
         with tab_in:
                 st.markdown("## 💰 Income")
