@@ -111,7 +111,7 @@ def main():
     use_api = '--test' not in sys.argv
     
     # Set page configuration
-    st.set_page_config(layout="wide", page_title="Goblin", page_icon="🟢")
+    st.set_page_config(layout="wide", page_title="Goblin", page_icon="goblin-mascot.png")
     
     # Reduce top margin of main content
     st.markdown("""
