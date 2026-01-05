@@ -269,7 +269,10 @@ def main():
         if 'Category' not in df_display.columns:
             df_display['Category'] = df.index.get_level_values(0).values
         
-        categories = df_display['Category'].unique()
+        # Get all categories (budget + transactions)
+        all_categories = set(budget_dict.keys()) if budget_dict else set()
+        all_categories.update(df_display['Category'].unique() if not df_display.empty else [])
+        categories = list(all_categories)
         
         # Get total rows for summary data
         total_rows = df.loc[df.index.get_level_values(1) == 'Total'].copy()
@@ -282,11 +285,7 @@ def main():
         # Sort categories by budget amount (descending)
         category_budgets = {}
         for category in categories:
-            category_summary = total_rows[total_rows['Category'] == category]
-            if not category_summary.empty:
-                category_budgets[category] = category_summary.iloc[0]['Budget']
-            else:
-                category_budgets[category] = 0
+            category_budgets[category] = budget_dict.get(category, 0.0)
         
         sorted_categories = sorted(category_budgets.items(), key=lambda x: x[1], reverse=True)
         
@@ -295,10 +294,17 @@ def main():
             category_data = df_display[df_display['Category'] == category].copy()
             
             # Get summary data for this category
-            category_summary = total_rows[total_rows['Category'] == category].iloc[0]
-            budget = category_summary['Budget']
-            actual = category_summary['Actual']
-            remaining = category_summary['Remaining']
+            category_row = total_rows[total_rows['Category'] == category]
+            if category_row.empty:
+                # Category has budget but no transactions
+                budget = budget_dict.get(category, 0)
+                actual = 0
+                remaining = budget
+            else:
+                category_summary = category_row.iloc[0]
+                budget = category_summary['Budget']
+                actual = category_summary['Actual']
+                remaining = category_summary['Remaining']
             
             # Create expander with status next to it
             col1, col2 = st.columns([4, 1])
