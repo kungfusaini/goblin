@@ -229,7 +229,7 @@ def main():
             )
             fig.update_layout(height=500)
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         # Load all transactions to calculate credit spending
         if use_api:
@@ -257,7 +257,7 @@ def main():
             with st.expander("View Credit Transactions", expanded=False):
                 credit_display = credit_transactions[['Date', 'Name', 'Amount', 'SubCategory']].copy()
                 credit_display = credit_display.iloc[::-1]  # Most recent first
-                st.dataframe(credit_display.style.format({'Amount': '£{:,.2f}'}), use_container_width=True, hide_index=True)
+                st.dataframe(credit_display.style.format({'Amount': '£{:,.2f}'}), width="stretch", hide_index=True)
     
     with col_bars:
         st.markdown("## Category Details")
@@ -339,7 +339,7 @@ def main():
                     st.dataframe(category_display.style.format({
                         'Actual': '£{:,.2f}',
                         'Contribution': '{:.1f}%'
-                    }), use_container_width=True, hide_index=True)
+}), width="stretch", hide_index=True)
                     
                     # Add "See Transactions" dropdown
                     with st.expander("See Transactions", expanded=False):
@@ -355,7 +355,7 @@ def main():
                         category_transactions = category_transactions[['Date', 'Name', 'Amount', 'SubCategory', 'PaymentMethod', 'Notes']].copy()
                         category_transactions = category_transactions.iloc[::-1]
                         
-                        st.dataframe(category_transactions.style.format({'Amount': '£{:,.2f}'}), use_container_width=True, hide_index=True)
+                        st.dataframe(category_transactions.style.format({'Amount': '£{:,.2f}'}), width="stretch", hide_index=True)
             
             with col2:
                 # Show only colored status on the right
@@ -395,7 +395,7 @@ def main():
                 # Display budget table
                 st.dataframe(
                     budget_df.style.format({'Amount': '£{:,.2f}'}),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True
                 )
             
