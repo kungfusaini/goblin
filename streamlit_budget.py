@@ -53,7 +53,7 @@ def load_and_process_data(selected_date=None, use_api=True):
     if df.empty:
         empty_df = pd.DataFrame(columns=['Budget', 'Actual', 'Remaining', 'Percentage', 'Overspend', 'Notes'], 
                                index=pd.MultiIndex.from_tuples([], names=['Category', 'SubCategory']))
-        return empty_df, has_budget
+        return empty_df, has_budget, budget_dict
     
     # Create pivot table
     pivot_table = df.pivot_table(
@@ -169,9 +169,31 @@ def main():
         st.error("🚨 No budget detected for selected month - showing $0 for all categories")
     
     # Check if no data found for selected month
-    if df.empty:
-        st.warning(f"No data found for {calendar.month_name[st.session_state.selected_date.month]} {st.session_state.selected_date.year}")
-        return
+    no_transaction_data = df.empty
+    if no_transaction_data:
+        st.warning(f"No transaction data found for {calendar.month_name[st.session_state.selected_date.month]} {st.session_state.selected_date.year}")
+        # Create a minimal DataFrame with budget categories for display
+        if budget_dict:
+            # Create placeholder rows for each budget category
+            placeholder_data = []
+            for category in budget_dict:
+                placeholder_data.append({
+                    'Budget': budget_dict[category],
+                    'Actual': 0.0,
+                    'Remaining': budget_dict[category],
+                    'Percentage': 0.0,
+                    'Overspend': 0.0,
+                    'Notes': ""
+                })
+            
+            df = pd.DataFrame(placeholder_data)
+            df.index = pd.MultiIndex.from_tuples(
+                [(cat, 'Total') for cat in budget_dict.keys()], 
+                names=['Category', 'SubCategory']
+            )
+        else:
+            st.error("No budget data available either - nothing to display")
+            return
     
     # Calculate overall totals
     total_rows = df.loc[df.index.get_level_values(1) == 'Total']
