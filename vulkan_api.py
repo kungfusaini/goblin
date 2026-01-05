@@ -7,7 +7,7 @@ import streamlit as st
 
 class VulkanAPI:
     def __init__(self):
-        self.base_url = os.getenv('VULKAN_API_URL', 'https://vulkan.sumeetsaini.com')
+        self.base_url = os.getenv('VULKAN_API_URL')
         self.headers = {'X-API-KEY': os.getenv('WELL_API_KEY')}
     
     def get_transactions(self) -> pd.DataFrame:
