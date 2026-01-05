@@ -417,6 +417,85 @@ def main():
                 st.markdown("## 💰 Income")
                 st.write("Income tracking coming soon...")
                 # TODO: Add income tracking functionality here
+    
+    # Add footer with raw data buttons
+    st.divider()
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col1:
+        if st.button("📊 View Raw Transactions", key="view_transactions"):
+            # Create transaction data for display
+            if use_api:
+                api_instance = VulkanAPI()
+                all_transactions = api_instance.get_transactions()
+            else:
+                all_transactions = pd.read_csv('test/testout.csv')
+            
+            # Format date and sort by date (newest first)
+            all_transactions['Date'] = pd.to_datetime(all_transactions['Date'])
+            all_transactions = all_transactions.sort_values('Date', ascending=False)
+            all_transactions['Date'] = all_transactions['Date'].dt.strftime('%Y-%m-%d')
+            
+            # Store in session state for the modal
+            st.session_state.show_raw_transactions = all_transactions
+            st.session_state.show_raw_transactions_modal = True
+            st.rerun()
+    
+    with col2:
+        if st.button("💰 View Raw Budget", key="view_budget"):
+            # Create budget data for display
+            current_month = st.session_state.selected_date.strftime("%Y-%m")
+            if use_api:
+                api = VulkanAPI()
+                budget_data = api.get_budget(current_month)
+            else:
+                with open('test/testbudget.json', 'r') as f:
+                    all_budget_data = json.load(f)
+                budget_data = all_budget_data.get(current_month, {})
+            
+            # Store in session state for the modal
+            st.session_state.show_raw_budget = budget_data
+            st.session_state.show_raw_budget_modal = True
+            st.rerun()
+    
+    with col3:
+        st.markdown(f"<small style='color: gray;'>Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</small>", unsafe_allow_html=True)
+    
+    # Modals for raw data display
+    if st.session_state.get('show_raw_transactions_modal', False):
+        st.session_state.show_raw_transactions_modal = False
+        with st.expander("📊 Raw Transaction Data", expanded=True):
+            transactions_df = st.session_state.show_raw_transactions
+            st.dataframe(
+                transactions_df.style.format({'Amount': '£{:,.2f}'}),
+                width="stretch",
+                height=600
+            )
+            st.markdown(f"**Total Transactions:** {len(transactions_df)}")
+            st.markdown(f"**Date Range:** {transactions_df['Date'].min()} to {transactions_df['Date'].max()}")
+            if st.button("Close Transactions", key="close_transactions"):
+                del st.session_state.show_raw_transactions
+                st.rerun()
+    
+    if st.session_state.get('show_raw_budget_modal', False):
+        st.session_state.show_raw_budget_modal = False
+        with st.expander("💰 Raw Budget Data", expanded=True):
+            budget_data = st.session_state.show_raw_budget
+            if budget_data:
+                budget_df = pd.DataFrame(list(budget_data.items()), columns=['Category', 'Amount'])
+                budget_df = budget_df.sort_values('Amount', ascending=False)
+                st.dataframe(
+                    budget_df.style.format({'Amount': '£{:,.2f}'}),
+                    width="stretch"
+                )
+                st.markdown(f"**Total Budget:** £{sum(budget_data.values()):,.2f}")
+                st.markdown(f"**Categories:** {len(budget_data)}")
+            else:
+                st.warning("No budget data found for selected month")
+            if st.button("Close Budget", key="close_budget"):
+                del st.session_state.show_raw_budget
+                st.rerun()
 
 if __name__ == "__main__":
     main()
