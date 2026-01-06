@@ -2,6 +2,10 @@
 
 A personal budget tracking application built with Streamlit that helps you monitor your spending and stay on top of your financial goals.
 
+## Demo
+
+![Goblin Budget Tracker Demo](demo.png)
+
 ## Features
 
 - 📊 Interactive spending visualization with charts and graphs
